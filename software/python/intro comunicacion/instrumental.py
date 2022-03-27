@@ -225,7 +225,7 @@ class Agilent34970A:
         self.channelsList = channelsList
         self.nChannels = len(self.channelsList)
         self._mux = visa.ResourceManager().open_resource(name)
-        self._mux.query("*IDN?")
+        print(self._mux.query("*IDN?"))
         self.config()
 
     def __del__(self):
@@ -277,8 +277,3 @@ class Agilent34970A:
         
         return data,temp,tim,chan
     
-    def getChannelsLen(self):
-        return self.nChannels
-    
-    def getChannels(self):
-        return self.channelsList
