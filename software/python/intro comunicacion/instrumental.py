@@ -45,7 +45,6 @@ class HantekPPS2320A:
             raise ValueError("El valor no puede ser mayor que 3")
         self._fuente.write("su{0:04d}".format(round(value*100)))
 
-
 class SR830(object):
     '''Clase para el manejo amplificador Lockin SR830 usando PyVISA de interfaz'''
     
@@ -136,8 +135,6 @@ class AFG3021B:
         print('falta')
         return 0
 
-
-
 class TDS1002B:
     """Clase para el manejo osciloscopio TDS2000 usando PyVISA de interfaz
     """
@@ -168,7 +165,7 @@ class TDS1002B:
         #Bloquea el control del osciloscopio
         self._osci.write("LOC")
     
-	def __del__(self):
+    def __del__(self):
         self._osci.close()			
 
     def unlock(self):
@@ -218,50 +215,70 @@ class TDS1002B:
 class Agilent34970A:
     """Clase para el manejo multiplexor Agilent34970A usando PyVISA de interfaz
     """
-    def __init__(self, name):
+
+    def __init__(self, name, 
+                 scanInterval = 1, 
+                 channelDelay = 0.2,
+				 channelsList = (101,102,103,104,105,106,107,108)):
+        self.scanInterval = scanInterval
+        self.channelDelay = channelDelay
+        self.channelsList = channelsList
+        self.nChannels = len(self.channelsList)
         self._mux = visa.ResourceManager().open_resource(name)
         self._mux.query("*IDN?")
-
-    	#Configuración de barrido
-		self.ScanInterval = 1
-		self.channelDelay = 0.2
-		self.canales = (101,102,103,104,105,106,107, 108)
-		self.ncanales = len(self.canales)
-
-		self._mux.write('ROUTE:SCAN', '(@' + str(self.canales)[1:])
-		self._mux.write('ROUT:CHAN:DELAY ' + str(self.channelDelay))
-		self._mux.write('FORMAT:READING:CHAN ON') #Return channel number with each reading
-		self._mux.write('FORMAT:READING:TIME ON') # Return time stamp with each reading
-		#self._mux.write('FORMat:READing:TIME:TYPE  RELative') #Return time stamp im seconds since scanstart
-		self._mux.write('FORMat:READing:TIME:TYPE  ABSolute') #Return time stamp absolute
-		self._mux.write('FORMat:READing:UNIT OFF')
-		self._mux.write('TRIG:TIMER ' + str(self.ScanInterval))		
-		self._mux.write('TRIG:COUNT ' + str(1)) # one scan sweep per measure
+        self.config()
 
     def __del__(self):
         self._mux.close()		
 	
-	def get_time(self):	
-		a = self._mux.query_ascii_values('SYSTEM:TIME?') #pido la hora de inicio			
-        return float(a[0])*3600+float(a[1])*60+a[2]	
+    def config(  self, 
+                 scanInterval = 1, 
+                 channelDelay = 0.2,
+				 channelsList = (101,102,103,104,105,106,107,108)):
+        
+        #Setear atributos
+        self.scanInterval = scanInterval
+        self.channelDelay = channelDelay
+        self.channelsList = channelsList
+        self.nChannels = len(self.channelsList)
+
+        #Limpiar configuración
+        self._mux.write('*CLS')
+        
+        #Configurar barrido
+        self._mux.write('ROUTE:SCAN (@' + str(self.channelsList)[1:])
+        self._mux.write('ROUT:CHAN:DELAY ' + str(self.channelDelay))
+        self._mux.write('FORMAT:READING:CHAN ON') #Return channel number with each reading
+        self._mux.write('FORMAT:READING:TIME ON') # Return time stamp with each reading
+		#self._mux.write('FORMat:READing:TIME:TYPE  RELative') #Return time stamp im seconds since scanstart
+        self._mux.write('FORMat:READing:TIME:TYPE  ABSolute') #Return time stamp absolute
+        self._mux.write('FORMat:READing:UNIT OFF')
+        self._mux.write('TRIG:TIMER ' + str(self.scanInterval))		
+        self._mux.write('TRIG:COUNT ' + str(1)) # one scan sweep per measure
+    
+    def get_time(self):	
+        self.initialTime = self._mux.query_ascii_values('SYSTEM:TIME?') #pido la hora de inicio			
+        return float(self.initialTime[0])*3600 + float(self.initialTime[1])*60 + self.initialTime[2]	
 	
-	def one_scan(self):
-		t0 = self._mux.query('INIT;:SYSTEM:TIME:SCAN?')		
+    def query(self, myquery):
+        return self._mux.query(myquery)
 
-		time.sleep(.5+(self.channelDelay+0.1)*self.ncanales)
-
-		%query number of datapoints per scan
-		Ndata=int(self._mux.query('DATA:POINTS?'))
-
-		data = []
-		time = []
-		chan = []
-		for ind in range(Ndata):
-			str=self._mux.query(mux,'DATA:REMOVE? 1');
-			d,t,ch = str.splot(',')
-			data.append(d)
-			time.append(t)
-			chan.append(ch)
-		
-		return data,time,chan
-		
+    def write(self, myquery):
+        self._mux.write(myquery)
+    
+    def one_scan(self):
+        time.sleep(.5+(self.channelDelay+0.1)*self.nChannels)
+        
+        data = self._mux.query_ascii_values('READ?')
+        data2 = np.transpose(np.reshape(np.array(data), (8, self.nChannels) ) )
+        temp = data2[0]
+        tim = data2[1:6]
+        chan = data2[7]
+        
+        return data,temp,tim,chan
+    
+    def getChannelsLen(self):
+        return self.nChannels
+    
+    def getChannels(self):
+        return self.channelsList
