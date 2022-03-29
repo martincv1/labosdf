@@ -134,12 +134,20 @@ for freq in range(1000,5000,1000):
     plt.xlabel('Tiempo [s]')
     plt.ylabel('Voltaje [V]')
 	
-from instrumental import Agilent34970A
-
 
 #Ejemplo comunicacion Multiplexor Difusividad térmica
+from instrumental import Agilent34970A
 mux = Agilent34970A('GPIB0::9::INSTR')
 data,temp,tim,chan = mux.one_scan()
 print(tim)
 print(temp)
 print(chan)
+
+#Ejemplo comunicacion Amprobe38XR-A
+from  Amporobe38XRA import Amporobe38XRA
+mult = Amporobe38XRA('COM1')
+value,Ylab=mult.GetValue(verbose=True)
+print(value,Ylab)
+value,Ylab=mult.GetValue(verbose=True)
+print(value,Ylab)
+mult.close()

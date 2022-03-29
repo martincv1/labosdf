@@ -1,6 +1,7 @@
 import visa
 import numpy as np
 import time
+import serial
 
 class HantekPPS2320A:
     """
@@ -276,4 +277,84 @@ class Agilent34970A:
         chan = data2[7]
         
         return data,temp,tim,chan
+
+class Amporobe38XRA:
+    def __init__(self,port='COM1'): 
+        self._mult = serial.Serial()        
+        self._mult.baudrate = 9600
+        self._mult.port = port
+        self._mult.bytesize = 8
+        self._mult.parity = 'N'
+        self._mult.stopbits = 1
+        self._mult.timeout = None    
+        self.open() 
+
+            
+    def open(self):
+        if not self._mult.is_open:
+            self._mult.open()            
+
+    def close(self):
+        self._mult.close()	        
+
+    def __del__(self):
+        self._mult.close()	        
+        
+    def __LeeStringAmprobe(self):
+        #%Lee el string que manda el multimetro.
+        #%A veces manda strings de distintas longitudes. Itero hasta que me da uno
+        #%de 15 caracteres.
+    
+        self._mult.flushInput()
+        count = 0
+        mystr = ""
+        while len(mystr)!=15:
+            count = count+1
+            mystr =self._mult.readline().decode('ascii')
+            if len(mystr)==0:
+                print('Salgo, probablemente timeout, desconecatado')
+                return mystr
+        return mystr        
+
+    def __ProcesaStringAmprobe(self,mystr,verbose):
+        #%extraigo los valores pertinentes del string
+        code = mystr[0:2]
+        data=(mystr[2:6])
+        modo=float(mystr[6])
+        exponente=float(mystr[8])
+        acdc=float(mystr[9])
+        absrel=(mystr[11]) # 8|A  8: rango fijo, A: Autorango
+        signo=float(mystr[12])
+        
+        if data == 'B0DD':
+            print('Resistencia infinita')
+            data = float('inf')
+        else:
+            data = float(data)
+    
+        #%muestro en pantalla (si me lo piden)
+        if verbose:
+            print('Str:  %s'%(mystr))
+            print('Code: %s'%(code))
+            print('Data:   %04.0f'%(data))
+            print('Modo:       %d'%(modo))
+            print('str(8):      %s'%(mystr[7]))
+            print('Exp:          %d'%(exponente))
+            print('AC|DC|AC+DC:   %d'%(acdc))
+            print('str(11):        %s'%(mystr[10]))
+            print('absrel:          %s'%(absrel))
+            print('Signo:            %d'%(signo))
+        
+        if code=='08': #,	% Ohm-meter
+            Ylab  = 'Resistance [Ohm]';
+    #        if absrel==8:
+    #            Ylab='Delta(Resistance) [Ohm]'#; end
+            value = pow(-1,signo)*data*1.0*pow(10,4-exponente)#;    % [Ohm]
+        return value,Ylab
+    
+    def GetValue(self,verbose=False):
+        mystr = self.__LeeStringAmprobe()
+        value, Ylab = self.__ProcesaStringAmprobe(mystr,verbose)
+        return value, Ylab
+        
     
