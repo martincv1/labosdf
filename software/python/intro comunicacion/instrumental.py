@@ -52,10 +52,10 @@ class SR830(object):
     def __init__(self,resource):
         self._lockin = visa.ResourceManager().open_resource(resource)
         print(self._lockin.query('*IDN?'))
-        self._lockin("LOCL 2") #Bloquea el uso de teclas del Lockin
+        self._lockin.write("LOCL 2") #Bloquea el uso de teclas del Lockin
         
     def __del__(self):
-        self._lockin("LOCL 0") #Desbloquea el Lockin
+        self._lockin.write("LOCL 0") #Desbloquea el Lockin
         self._lockin.close()
         
     def setModo(self, modo):
