@@ -1,7 +1,7 @@
 import visa
 import numpy as np
 import time
-import serial
+import serial # Si falla, instalar con: "conda install -c anaconda pyserial" o "pip install pyserial"
 
 class HantekPPS2320A:
     """
@@ -142,7 +142,7 @@ class TDS1002B:
     
     def __init__(self, name):
         self._osci = visa.ResourceManager().open_resource(name)
-        self._osci.query("*IDN?")
+        print(self._osci.query("*IDN?"))
 
     	#Configuración de curva
         
@@ -157,17 +157,18 @@ class TDS1002B:
 
         #Adquisición por sampleo
         self._osci.write("ACQ:MOD SAMP")
-		
+				
+        #Bloquea el control del osciloscopio
+        self._osci.write("LOC")
+    	
+    def __del__(self):
+        self._osci.close()			
+
+	def config(self):
         #Seteo de canal
         self.set_channel(channel=1, scale=20e-3)
         self.set_channel(channel=2, scale=20e-3)
         self.set_time(scale=1e-3, zero=0)
-		
-        #Bloquea el control del osciloscopio
-        self._osci.write("LOC")
-    
-    def __del__(self):
-        self._osci.close()			
 
     def unlock(self):
          #Desbloquea el control del osciloscopio
