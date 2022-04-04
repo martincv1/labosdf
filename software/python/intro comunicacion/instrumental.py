@@ -164,7 +164,7 @@ class TDS1002B:
     def __del__(self):
         self._osci.close()			
 
-	def config(self):
+    def config(self):
         #Seteo de canal
         self.set_channel(channel=1, scale=20e-3)
         self.set_channel(channel=2, scale=20e-3)
