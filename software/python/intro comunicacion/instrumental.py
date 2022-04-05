@@ -118,7 +118,7 @@ class AFG3021B:
         
         #Activa la salida
         self._generador.write('OUTPut1:STATe on')
-        self.setFrequency(1000)
+        # self.setFrequency(1000)
         
     def __del__(self):
         self._generador.close()
