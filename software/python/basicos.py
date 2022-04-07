@@ -70,8 +70,8 @@ tabla_mat = contenido_mat['mitabla']
 # Como el archivo npz admite muchas tablas en el mismo archivo
 # paso los datos p
 np.savez('datos.npz', mitabla=tabla)
-contenido_npz = io.loadmat('datos.mat')
-print(contenido_mat)
+contenido_npz = np.load('datos.npz')
+print(contenido_npz)
 tabla_npz = contenido_npz['mitabla']
 
 # Plotear
