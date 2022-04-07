@@ -346,11 +346,75 @@ class Amporobe38XRA:
             print('absrel:          %s'%(absrel))
             print('Signo:            %d'%(signo))
         
-        if code=='08': #,	% Ohm-meter
+        if code == '10': #Voltmeter ~
+            if modo == 0:
+                Ylab = 'Voltage ~ [V]'  
+                value = data*1e-4*1.0*pow(10,exponente)
+            else: 
+                Ylab  = 'Voltage ~ [dBm]';
+                value = pow(-1,signo)*data*0.01;
+        elif code == '0C': #Voltmeter --
+            Ylab = 'Voltage';        
+            Ylab = Ylab +' DC [V]'
+            value = pow(-1,signo)*data*1.0*pow(10,exponente-4)
+        elif code=='08': # Ohm-meter
             Ylab  = 'Resistance [Ohm]';
-    #        if absrel==8:
-    #            Ylab='Delta(Resistance) [Ohm]'#; end
-            value = pow(-1,signo)*data*1.0*pow(10,4-exponente)#;    % [Ohm]
+            value = pow(-1,signo)*data*1.0*pow(10,4-exponente)
+        elif code == '04':  # Test diode
+            Ylab = 'Test diode [V]'
+            value = data/1000
+        elif code == '0F':  # Frequencemeter
+            value = pow(-1,signo)*data*0.01*pow(10,exponente)
+            if modo == 2:
+                Ylab  = 'Cyclic Rate [%]'
+            else:
+                Ylab = 'Frequency [Hz]'
+        elif code == '0B':  # Capacity
+            Ylab = 'Capacity [µF]'    
+            value = pow(-1,signo)*data*pow(10,exponente-5)
+        elif code == '07':  # Current µA
+            Ylab = 'Current [A]'
+            value = pow(-1,signo)*data*pow(10,exponente-8)
+            if acdc == 0:
+                Ylab= 'DC ' + Ylab  
+            elif acdc == 1:
+                Ylab= 'AC ' + Ylab  
+            elif acdc == 2:
+                Ylab= 'AC+DC ' + Ylab  
+        elif code == '0E':  # Current mA
+            Ylab = 'Current [A]'
+            value = pow(-1,signo)*data*pow(10,exponente-6)
+            if acdc == 0:
+                Ylab= 'DC ' + Ylab  
+            elif acdc == 1:
+                Ylab= 'AC ' + Ylab  
+            elif acdc == 2:
+                Ylab= 'AC+DC ' + Ylab  
+        elif code == '0A':  # Current A
+            Ylab = 'Current [A]'
+            value = pow(-1,signo)*data/1000
+            if acdc == 0:
+                Ylab= 'DC ' + Ylab  
+            elif acdc == 1:
+                Ylab= 'AC ' + Ylab  
+            elif acdc == 2:
+                Ylab= 'AC+DC ' + Ylab  
+        elif code == '03':  # mA 4-20 --
+            Ylab = 'Current 4-20 [mA] --'
+            value = data
+        elif code == '06':  #Temperature [°C]
+            Ylab = 'Temperature [°C]'
+            value = pow(-1,signo)*data
+        elif code == '02':  #Temperature [°F]
+            Ylab = 'Temperature [°F]'
+            value = pow(-1,signo)*data
+        else:
+            value = 0
+            Ylab = ""
+            
+        if absrel=='8':
+            Ylab= 'Delta ' + Ylab  
+            
         return value,Ylab
     
     def GetValue(self,verbose=False):

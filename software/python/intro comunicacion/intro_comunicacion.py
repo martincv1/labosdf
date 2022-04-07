@@ -144,7 +144,7 @@ print(temp)
 print(chan)
 
 #Ejemplo comunicacion Amprobe38XR-A
-from  Amporobe38XRA import Amporobe38XRA
+from instrumental import Amporobe38XRA
 mult = Amporobe38XRA('COM1')
 value,Ylab=mult.GetValue(verbose=True)
 print(value,Ylab)

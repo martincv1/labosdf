@@ -21,8 +21,8 @@ with nidaqmx.Task() as task:
 	
 
 ## Medicion por tiempo/samples de una sola vez
-def medir(duracion, fs):
-    cant_puntos = duracion*fs    
+def medicion_una_vez(duracion, fs):
+    cant_puntos = int(duracion*fs)
     with nidaqmx.Task() as task:
         modo= nidaqmx.constants.TerminalConfiguration.DIFFERENTIAL
         task.ai_channels.add_ai_voltage_chan("Dev1/ai1", terminal_config = modo)
@@ -36,28 +36,29 @@ def medir(duracion, fs):
 
 duracion = 1 #segundos
 fs = 250000 #Frecuencia de muestreo
-
-y = medir(duracion, fs)
+y = medicion_una_vez(duracion, fs)
 plt.plot(y)
 plt.grid()
 plt.show()
 
 
 ## Medicion continua
-fs = 250000 #Frecuencia de muestreo
-task = nidaqmx.Task()
-modo= nidaqmx.constants.TerminalConfiguration.DIFFERENTIAL
-task.ai_channels.add_ai_voltage_chan("Dev1/ai1", terminal_config = modo)
-task.timing.cfg_samp_clk_timing(fs, sample_mode = nidaqmx.constants.AcquisitionType.CONTINUOUS)
-task.start()
-t0 = time.time()
-total = 0
-for i in range(10):
-    time.sleep(0.1)
-    datos = task.read(number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE)           
-    total = total + len(datos)
-    t1 = time.time()
-    print("%2.3fs %d %d %2.3f" % (t1-t0, len(datos), total, total/(t1-t0)))    
-task.stop()
-task.close()
+def medicion_continua(duracion, fs):
+    cant_puntos = int(duracion*fs)
+    with nidaqmx.Task() as task:
+        modo= nidaqmx.constants.TerminalConfiguration.DIFFERENTIAL
+        task.ai_channels.add_ai_voltage_chan("Dev1/ai1", terminal_config = modo)
+        task.timing.cfg_samp_clk_timing(fs, sample_mode = nidaqmx.constants.AcquisitionType.CONTINUOUS)
+        task.start()
+        t0 = time.time()
+        total = 0
+        while total<cant_puntos:
+            time.sleep(0.1)
+            datos = task.read(number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE)           
+            total = total + len(datos)
+            t1 = time.time()
+            print("%2.3fs %d %d %2.3f" % (t1-t0, len(datos), total, total/(t1-t0)))            
 
+fs = 250000 #Frecuencia de muestreo
+duracion = 10 #segundos
+medicion_continua(duracion, fs)
