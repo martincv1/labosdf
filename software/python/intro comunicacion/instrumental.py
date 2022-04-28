@@ -2,6 +2,7 @@ import visa
 import numpy as np
 import time
 import serial # Si falla, instalar con: "conda install -c anaconda pyserial" o "pip install pyserial"
+import datetime
 
 class HantekPPS2320A:
     """
@@ -74,7 +75,7 @@ class SR830(object):
         Las tensiones posibles son entre -10.5 a 10.5'''
         self._lockin.write('AUXV {0}, {1}'.format(auxOut, auxV))
             
-    def setReferencia(self,isIntern, freq, vRef = 1):
+    def setReferencia(self,isIntern, freq, voltaje = 1):
         if isIntern:
             #Referencia interna
             #Configura la referencia si es así
@@ -228,7 +229,9 @@ class Agilent34970A:
         self.nChannels = len(self.channelsList)
         self._mux = visa.ResourceManager().open_resource(name)
         print(self._mux.query("*IDN?"))
-        self.config()
+        self.config(scanInterval =scanInterval, 
+                 channelDelay = channelDelay,
+				 channelsList =channelsList) 
 
     def __del__(self):
         self._mux.close()		
@@ -269,12 +272,13 @@ class Agilent34970A:
         self._mux.write(myquery)
     
     def one_scan(self):
-        time.sleep(.5+(self.channelDelay+0.1)*self.nChannels)
+        # time.sleep(.5+(self.channelDelay+0.1)*self.nChannels)
         
         data = self._mux.query_ascii_values('READ?')
-        data2 = np.transpose(np.reshape(np.array(data), (8, self.nChannels) ) )
+        data2 = np.transpose(np.reshape(np.array(data), (self.nChannels, 8) ) )
         temp = data2[0]
-        tim = data2[1:6]
+        tim = np.array(data2[1:7], dtype=np.int32)
+        tim = [datetime.datetime(x[0], x[1], x[2], x[3], x[4], x[5]).timestamp() for x in np.transpose(tim)]        
         chan = data2[7]
         
         return data,temp,tim,chan
