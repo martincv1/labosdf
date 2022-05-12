@@ -1,57 +1,50 @@
 # -*- coding: utf-8 -*-
 """
 Generador de funciones Tektronix AFG 3021B
-Manual U (web): https://github.com/hgrecco/labosdf-bin/raw/master/manuals/TektronixAFG3000.pdf
-Manual P (web): https://github.com/hgrecco/labosdf-bin/raw/master/manuals/TektronixAFG3000_p.pdf
-Manual U (local): \\Srvlabos\manuales\Tektronix\AFG3012B (M Usuario).pdf
-Manual P (local): \\Srvlabos\manuales\Tektronix\AFG3012B (Prog Manual).pdf
+Manual U (web): https://github.com/diegoshalom/labosdf/blob/master/manuales/AFG3021B%20user%20manual.pdf
+Manual P (web): https://github.com/diegoshalom/labosdf/blob/master/manuales/AFG3021B%20Programmer%20Manual.pdf
 """
 
-from __future__ import division, unicode_literals, print_function, absolute_import
 
 import time
 
 import numpy as np
 import visa
 
-print(__doc__)
-
-# Este string determina el intrumento que van a usar.
-# Lo tienen que cambiar de acuerdo a lo que tengan conectado.
-resource_name = 'USB0::0x0699::0x0346::C033250::INSTR'
-
-rm = visa.ResourceManager()
-
-# Abre la sesion VISA de comunicacion
-fungen = rm.open_resource(resource_name)
-
-print(fungen.query('*IDN?'))
-
-# Rampa logaritmica de frequencias 
-# Los dos primeros numeros (1 y 3) indican los exponentes de los limites(10^1 y 10^3)
-# El siguiente el numero de pasos
-for freq in np.logspace(1, 3, 20):
-    fungen.write('FREQ %f' % freq)
-    time.sleep(0.1)
-
-# Rampa lineal de amplitudes
-# Los dos primeros numeros (0 y 1) indican los limites.
-# El siguiente el numero de pasos
-for amplitude in np.linspace(0, 1, 10):
-    fungen.write('VOLT %f' % amplitude)
-    time.sleep(0.1)
+class AFG3021B:
     
-    
-# Rampa lineal de offset
-# Los dos primeros numeros (0 y 1) indican los limites.
-# El siguiente el numero de pasos
-for offset in np.linspace(0, 1, 10):
-    fungen.write('VOLT:OFFS %f' % offset)
+    def __init__(self, name='USB0::0x0699::0x0346::C034165::INSTR'):
+        self._generador = visa.ResourceManager().open_resource(name)
+        print(self._generador.query('*IDN?'))
+        
+        #Activa la salida
+        self._generador.write('OUTPut1:STATe on')
+        # self.setFrequency(1000)
+        
+    def __del__(self):
+        self._generador.close()
+        
+    def setFrequency(self, freq):
+        self._generador.write(f'FREQ {freq}')
+        
+    def getFrequency(self):
+        return self._generador.query_ascii_values('FREQ?')
+        
+    def setAmplitude(self, freq):
+        print('falta')
+        
+    def getAmplitude(self):
+        print('falta')
+        return 0
+
+
+
+#generador de funciones
+fungen = AFG3021B(name = 'USB0::0x0699::0x0346::C034198::INSTR')
+fungen.getFrequency()
+
+#barrido de frecuencia
+for freq in range(1000,5000,1000):
+    print(freq)
+    fungen.setFrequency(freq)
     time.sleep(0.1)
-
-fungen.close()
-
-
-
-
-

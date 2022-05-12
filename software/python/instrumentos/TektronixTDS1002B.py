@@ -1,77 +1,101 @@
 # -*- coding: utf-8 -*-
 """
 Osciloscopio Tektronix TDS1002B
-Manual U (web): https://github.com/hgrecco/labosdf-bin/raw/master/manuals/TDS1002 Manual.pdf
-Manual P (web): https://github.com/hgrecco/labosdf-bin/raw/master/manuals/TDS 100-1000-2000_prog.pdf
-Manual U (local): \\Srvlabos\manuales\Tektronix\TDS1002 Manual.pdf
-Manual P (local): \\Srvlabos\manuales\Tektronix\TDS 200-1000-2000_prog.pdf
+Manual U (web): https://github.com/diegoshalom/labosdf/blob/master/manuales/TDS1000%20manual-usuario.pdf
+Manual P (web): https://github.com/diegoshalom/labosdf/blob/master/manuales/TDS1000%20programming_manual.pdf
 """
 
-from __future__ import division, unicode_literals, print_function, absolute_import
-
 import time
-
 from matplotlib import pyplot as plt
 import numpy as np
 import visa
 
-print(__doc__)
+class TDS1002B:
+    """Clase para el manejo osciloscopio TDS2000 usando PyVISA de interfaz
+    """
+    
+    def __init__(self, name):
+        self._osci = visa.ResourceManager().open_resource(name)
+        print(self._osci.query("*IDN?"))
 
-# Este string determina el intrumento que van a usar.
-# Lo tienen que cambiar de acuerdo a lo que tengan conectado.
-resource_name = 'USB0::0x0699::0x0363::C065089::INSTR'
+    	#Configuración de curva
+        
+        # Modo de transmision: Binario positivo.
+        self._osci.write('DAT:ENC RPB') 
+        # 1 byte de dato. Con RPB 127 es la mitad de la pantalla
+        self._osci.write('DAT:WID 1')
+        # La curva mandada inicia en el primer dato
+        self._osci.write("DAT:STAR 1") 
+        # La curva mandada finaliza en el último dato
+        self._osci.write("DAT:STOP 2500") 
 
+        #Adquisición por sampleo
+        self._osci.write("ACQ:MOD SAMP")
+				
+        #Bloquea el control del osciloscopio
+        self._osci.write("LOC")
+    	
+    def __del__(self):
+        self._osci.close()			
 
-rm = visa.ResourceManager()
+    def config(self):
+        #Seteo de canal
+        self.set_channel(channel=1, scale=20e-3)
+        self.set_channel(channel=2, scale=20e-3)
+        self.set_time(scale=1e-3, zero=0)
 
-osci = rm.open_resource(resource_name)
+    def unlock(self):
+         #Desbloquea el control del osciloscopio
+        self._osci.write("UNLOC")
 
-osci.query('*IDN?')
-
-# Le pido algunos parametros de la pantalla, para poder escalear adecuadamente
-xze, xin, yze, ymu, yoff = osci.query_ascii_values('WFMPRE:XZE?;XIN?;YZE?;YMU?;YOFF?;', separator=';')
-
-# Modo de transmision: Binario
-osci.write('DAT:ENC RPB')
-osci.write('DAT:WID 1')
-
-# Adquiere los datos del canal 1 y los devuelve en un array de numpy
-data = osci.query_binary_values('CURV?', datatype='B', container=np.array)
-
-tiempo = xze + np.arange(len(data)) * xin
-
-plt.plot(tiempo, data)
-plt.xlabel('Tiempo [s]')
-plt.ylabel('Voltaje [V]')
-
-
-# Si vas a repetir la adquisicion muchas veces sin cambiar la escala
-# es util definir una funcion que mida y haga las cuentas
-def definir_medir(inst):
-    xze, xin, yze, ymu, yoff = inst.query_ascii_values('WFMPRE:XZE?;XIN?;YZE?;YMU?;YOFF?;', separator=';')
-
-    # creamos una function auxiliar
-    def _medir():
-        # Adquiere los datos del canal 1 y los devuelve en un array de numpy
-        data = inst.query_binary_values('CURV?', datatype='B', container=np.array)
-
+    def set_channel(self, channel, scale, zero=0):
+    	#if coup != "DC" or coup != "AC" or coup != "GND":
+    	    #coup = "DC"
+    	#self._osci.write("CH{0}:COUP ".format(canal) + coup) #Acoplamiento DC
+    	#self._osci.write("CH{0}:PROB 
+        self._osci.write("CH{0}:SCA {1}".format(channel, scale))
+        self._osci.write("CH{0}:POS {1}".format(channel, zero))
+	
+    def get_channel(self, channel):
+        return self._osci.query("CH{0}?".format(channel))
+		
+    def set_time(self, scale, zero=0):
+        self._osci.write("HOR:SCA {0}".format(scale))
+        self._osci.write("HOR:POS {0}".format(zero))	
+	
+    def get_time(self):
+        return self._osci.query("HOR?")
+	
+    def read_data(self, channel):
+        # Hace aparecer el canal en pantalla. Por si no está habilitado
+        self._osci.write("SEL:CH{0} ON".format(channel)) 
+        # Selecciona el canal
+        self._osci.write("DAT:SOU CH{0}".format(channel)) 
+    	#xze primer punto de la waveform
+    	#xin intervalo de sampleo
+    	#ymu factor de escala vertical
+    	#yoff offset vertical
+        xze, xin, yze, ymu, yoff = self._osci.query_ascii_values('WFMPRE:XZE?;XIN?;YZE?;YMU?;YOFF?;', 
+                                                                 separator=';') 
+        data = (self._osci.query_binary_values('CURV?', datatype='B', 
+                                               container=np.array) - yoff) * ymu + yze        
         tiempo = xze + np.arange(len(data)) * xin
         return tiempo, data
     
-    # Devolvemos la funcion auxiliar que "sabe" la escala
-    return _medir
+    def get_range(self, channel):
+        xze, xin, yze, ymu, yoff = self._osci.query_ascii_values('WFMPRE:XZE?;XIN?;YZE?;YMU?;YOFF?;', 
+                                                                 separator=';')         
+        rango = (np.array((0, 255))-yoff)*ymu +yze
+        return rango   
 
-
-medir = definir_medir(osci)
-for n in range(10):
-    tiempo, data = medir()
-    plt.figure()
-    plt.plot(tiempo, data)
-    plt.xlabel('Tiempo [s]')
-    plt.ylabel('Voltaje [V]')
-    time.sleep(.1)
-
-osci.close()
-
-
+#osciloscopio
+osci = TDS1002B('USB0::0x0699::0x0363::C102223::INSTR')
+osci.get_time()
+osci.set_time(scale = 1e-3)
+osci.set_channel(1,scale = 2)
+tiempo, data = osci.read_data(channel = 1)
+plt.plot(tiempo,data)
+plt.xlabel('Tiempo [s]')
+plt.ylabel('Voltaje [V]')
+plt.ylim(osci.get_range(channel = 1))
 
