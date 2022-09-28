@@ -52,13 +52,19 @@ def medicion_continua(duracion, fs):
         task.start()
         t0 = time.time()
         total = 0
+        data =[]
         while total<cant_puntos:
             time.sleep(0.1)
             datos = task.read(number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE)           
+            data.extend(datos)
             total = total + len(datos)
             t1 = time.time()
             print("%2.3fs %d %d %2.3f" % (t1-t0, len(datos), total, total/(t1-t0)))            
+        return data
 
-fs = 250000 #Frecuencia de muestreo
+fs = 2500 #Frecuencia de muestreo
 duracion = 10 #segundos
-medicion_continua(duracion, fs)
+y = medicion_continua(duracion, fs)
+plt.plot(y)
+plt.grid()
+plt.show()
