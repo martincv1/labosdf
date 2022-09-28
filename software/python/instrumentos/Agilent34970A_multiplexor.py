@@ -46,7 +46,7 @@ class Agilent34970A:
         self._mux.write('*CLS')
         
         #Configurar barrido
-        self._mux.write('ROUTE:SCAN (@' + str(self.channelsList)[1:])
+        self._mux.write('ROUTE:SCAN (@' + str(self.channelsList)[1:-1] + ")")
         self._mux.write('ROUT:CHAN:DELAY ' + str(self.channelDelay))
         self._mux.write('FORMAT:READING:CHAN ON') #Return channel number with each reading
         self._mux.write('FORMAT:READING:TIME ON') # Return time stamp with each reading
