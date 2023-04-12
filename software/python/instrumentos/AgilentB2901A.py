@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Fuente Agilent B2901A
-manufacturer: http://www.hantek.com.cn/en/ProductDetail_32.html
 Manual Usuario (local): \\Srvlabos\manuales\HP-Agilent\B2901A\B2910-90010.pdf
 """
 
@@ -27,6 +26,21 @@ print(inst.query('*IDN?'))
 # Voltage, corriente, resistencia, tiempo, status, source ouput setting
 print(inst.query_ascii_values(':READ:SCALar?'))
 
+
+float(inst.query('MEASURE:VOLT:DC?')) #para consultar el voltaje.
+
+
+# parámetros para controlal la fuente
+inst.write(":SOUR:FUNC:MODE CURR") # Modo corriente
+inst.write(":SOUR:CURR 0.1") # Pone una corriente
+inst.write(":SENS:VOLT:PROT 6") #Establece el límite de voltaje
+
+inst.write(":SOUR:FUNC:MODE VOLT") # Modo voltaje
+inst.write(":SOUR:VOLT 5") # Pone un voltaje
+inst.write(":SENS:CURR:PROT 0.5") #Establece el límite de corrienteº
+
+
+inst.write(":OUTP OFF") #Apago la salida
 
 inst.close()
 

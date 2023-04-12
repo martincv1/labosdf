@@ -30,7 +30,7 @@ def medicion_una_vez(duracion, fs):
         task.timing.cfg_samp_clk_timing(fs,samps_per_chan = cant_puntos,
                                         sample_mode = nidaqmx.constants.AcquisitionType.FINITE)
         
-        datos = task.read(number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE)           
+        datos = task.read(number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE, timeout=duracion+0.1)           
     datos = np.asarray(datos)    
     return datos
 
