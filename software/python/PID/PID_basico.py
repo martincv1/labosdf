@@ -27,8 +27,8 @@ time.sleep(0.01)
 ser.flushInput()
 
 #escribo voltaje, pregunto posicion y velocidad
-str = 'V0\n\r'
-ser.write(bytes(str,'utf-8'))
+mistr = 'V0\n\r'
+ser.write(bytes(mistr,'utf-8'))
 time.sleep(0.002)
 s = ser.readline(25)
 print(s)
@@ -37,8 +37,8 @@ print(s)
 
 def setVoltageGetData(puerto,voltaje):
     puerto.flushInput()
-    str = 'V%f\n\r' % (voltaje)
-    puerto.write(bytes(str,'utf-8'))
+    mistr = 'V%f\n\r' % (voltaje)
+    puerto.write(bytes(mistr,'utf-8'))
     time.sleep(0.002)
     s = puerto.readline(25)
     pos = float(s[0:9])
