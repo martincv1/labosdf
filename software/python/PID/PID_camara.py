@@ -27,13 +27,16 @@ def trackTemplate(vs, template, limites):
     if im is None:
         return None
     
-    # Corte zona del tubo y pasado a escala de grises
+    # Corte zona del tubo y pasado a escala de grises y a enteros.
     min_x, max_x, min_y, max_y = limites
     im = im[min_y:max_y, min_x:max_x, :]
     im = np.mean(im, axis=2)
+    im = np.asarray(im, int)
     
     # Lee el template y lo trackea. Devuelve como posición la esquina superior izquierda.
     template = cv2.imread(template)
+    template = np.mean(template, axis=2)
+    template = np.asarray(template, int)
     res = cv2.matchTemplate(im, template, cv2.TM_CCOEFF)
     top_left = cv2.minMaxLoc(res)[3]
     
@@ -78,7 +81,7 @@ t0 = time.time()
 while time.time() - t0 < duracion:
     
     tiempo.append(time.time() - t0)
-    pos = trackTemplate(vs, template, limites, GRAFICAR=False)
+    pos = trackTemplate(vs, template, limites)
     posicion.append(pos)
 
     # Encendido ventiladores 
