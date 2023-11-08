@@ -68,3 +68,50 @@ y = medicion_continua(duracion, fs)
 plt.plot(y)
 plt.grid()
 plt.show()
+
+## Modo conteo de flancos 
+# Obtengo el nombre de la primera placa y el primer canal de conteo (ci)
+cDaq = system.devices[0].name
+ci_chan1 = system.devices[0].ci_physical_chans[0].name
+print(cDaq)
+print(ci_chan1 )
+
+# Pinout: 
+# NiUSB6212 
+# gnd: 5 or 37
+# src: 33
+
+
+def daq_conteo(duracion):
+    with nidaqmx.Task() as task:
+
+        # Configuro la task para edge counting
+        task.ci_channels.add_ci_count_edges_chan(counter=ci_chan1,
+            name_to_assign_to_channel="",
+            edge=nidaqmx.constants.Edge.RISING,
+            initial_count=0)
+        
+        # arranco la task
+        task.start()
+        counts = [0]
+        t0 = time.time()
+        try:
+            while time.time() - t0 < duracion:
+                count = task.ci_channels[0].ci_count
+                print(f"{time.time()-t0:.2f}s {count-counts[-1]} {count}")
+                counts.append(count)
+                time.sleep(0.2)
+                
+        except KeyboardInterrupt:
+            pass
+        
+        finally:
+            task.stop()
+            
+    return counts  
+
+duracion = 10 # segundos
+y = daq_conteo(duracion)
+plt.plot(y)
+plt.grid()
+plt.show()
