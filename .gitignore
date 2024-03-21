@@ -12,3 +12,4 @@ update_*
 dist
 MANIFEST
 .tox
+.ipynb_checkpoints/
